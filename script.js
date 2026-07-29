@@ -31,21 +31,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Tech Logos Interaction
-    const techItems = document.querySelectorAll('.logo-item');
+    const techItems = document.querySelectorAll('.tech-card');
     const tooltip = document.getElementById('tech-tooltip');
     let tooltipTimeout;
+    let marqueeTimeout;
 
     if (techItems.length > 0 && tooltip) {
         techItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const name = item.getAttribute('data-name');
+                if (!name) return;
+                
                 tooltip.textContent = name;
                 
-                // Position tooltip relative to viewport
+                // Position tooltip relative to viewport above the card
                 const rect = item.getBoundingClientRect();
                 tooltip.style.left = rect.left + (rect.width / 2) + 'px';
-                tooltip.style.top = rect.top - 10 + 'px';
+                tooltip.style.top = rect.top - tooltip.offsetHeight - 8 + 'px';
                 
                 tooltip.classList.add('show');
                 
@@ -53,15 +56,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 tooltipTimeout = setTimeout(() => {
                     tooltip.classList.remove('show');
                 }, 2000); // Hide after 2 seconds
-                
+
                 // Pause animation momentarily so user can tap reliably and read
                 const marquee = item.closest('.marquee-wrapper');
-                const contents = marquee.querySelectorAll('.marquee-content');
-                contents.forEach(c => c.style.animationPlayState = 'paused');
-                setTimeout(() => {
-                    contents.forEach(c => c.style.animationPlayState = 'running');
-                }, 2000);
+                if (marquee) {
+                    const contents = marquee.querySelectorAll('.marquee-content');
+                    contents.forEach(c => c.style.animationPlayState = 'paused');
+                    clearTimeout(marqueeTimeout);
+                    marqueeTimeout = setTimeout(() => {
+                        contents.forEach(c => c.style.animationPlayState = 'running');
+                    }, 2000);
+                }
             });
+        });
+    }
+
+    // Email Copy & Compose Fallback
+    const emailLink = document.querySelector('a[href^="mailto:"]');
+    if (emailLink) {
+        emailLink.addEventListener('click', (e) => {
+            e.preventDefault(); // Stop default mailto from failing silently on desktop
+            
+            const email = "prtech.build@gmail.com";
+            const subject = "Project Inquiry | PRTECH.AI";
+            const body = "Hi PRTECH Team,\n\nI would like to inquire about your services for my project...\n\nMy Name: \nMy Business: \n\nBest regards,";
+            
+            const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Detect if mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // On mobile, native mailto is highly reliable
+                window.location.href = mailtoUrl;
+            } else {
+                // On desktop, copy to clipboard and open Gmail web compose in a new tab
+                navigator.clipboard.writeText(email).then(() => {
+                    const tooltip = document.getElementById('tech-tooltip');
+                    if (tooltip) {
+                        tooltip.textContent = "Opening Gmail (copied to clipboard!)";
+                        const rect = emailLink.getBoundingClientRect();
+                        tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                        tooltip.style.top = rect.top - 45 + 'px';
+                        tooltip.classList.add('show');
+                        setTimeout(() => {
+                            tooltip.classList.remove('show');
+                        }, 2500);
+                    }
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+                
+                // Open Gmail Web Compose in a new tab
+                window.open(gmailComposeUrl, '_blank');
+            }
         });
     }
 
@@ -126,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderLusion();
 
     // Hover state expanding ring on interactive elements
-    const interactives = document.querySelectorAll('a, button, .faq-item, .logo-item, .btn-shiny, .btn-dark-sm, .social');
+    const interactives = document.querySelectorAll('a, button, .faq-item, .tech-card, .btn-shiny, .btn-dark-sm, .social, .btn-ai-tool');
     interactives.forEach(el => {
         el.addEventListener('mouseenter', () => {
             if(cursor) cursor.classList.add('hover');
@@ -141,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- SCROLL REVEAL ANIMATIONS ---
-    const blocksToReveal = document.querySelectorAll('.section-header, .portfolio-card, .pricing-card, .testimonial-card, .bento-card, .bento-mini, .faq-card, .product-card, .about-card');
+    const blocksToReveal = document.querySelectorAll('.section-header, .portfolio-card, .pricing-card, .testimonial-card, .bento-card, .bento-mini, .faq-card, .product-card, .about-card, .ai-tool-card');
     
     // Automatically flag elements for CSS animation without cluttering HTML
     blocksToReveal.forEach((el, index) => {
